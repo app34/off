@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07111f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Off Days">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png" sizes="192x192">
+<link rel="apple-touch-icon" href="./icons/icon-152.png">
+<title>Off Days</title>
+<style>
+  :root {
+    --bg: #07111f;
+    --card: #12233a;
+    --line: rgba(255,255,255,.08);
+    --text: #eef4ff;
+    --muted: #93a4bd;
+    --off: #f5d547;
+    --al: #c9b6ff;
+    --ml: #f97316;
+    --np: #ef4444;
+    --em: #fb7185;
+    --pt: #38bdf8;
+    --cc: #4ade80;
+    --fri: #6aa7ff;
+    --shadow: 0 10px 30px rgba(0,0,0,.28);
+    --radius: 18px;
+    --safe-t: env(safe-area-inset-top, 0px);
+    --safe-b: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    background: radial-gradient(1200px 600px at 50% -10%, #143056 0%, var(--bg) 55%);
+    color: var(--text);
+    min-height: 100%;
+  }
+  button, input, textarea, select { font-family: inherit; color: inherit; }
+  button { cursor: pointer; }
+  .app {
+    width: min(480px, 100%);
+    margin: 0 auto;
+    min-height: 100%;
+    padding: calc(12px + var(--safe-t)) 14px calc(24px + var(--safe-b));
+  }
+  .topbar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .icon-btn, .menu-btn {
+    width: 42px; height: 42px; border-radius: 14px;
+    border: 1px solid var(--line); background: rgba(255,255,255,.04);
+    color: var(--text); display: grid; place-items: center; flex: 0 0 auto;
+  }
+  .icon-btn:active, .menu-btn:active, .nav-btn:active, .day:active, .type-btn:active { transform: scale(.97); }
+  .brand { flex: 1; min-width: 0; }
+  .brand h1 { margin: 0; font-size: 18px; letter-spacing: -.02em; }
+  .brand p { margin: 2px 0 0; color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .screen { display: none; animation: rise .28s ease; }
+  .screen.on { display: block; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .balances { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .bal {
+    background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+    border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; box-shadow: var(--shadow);
+  }
+  .bal .k { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .bal .v { font-size: 28px; font-weight: 750; margin-top: 2px; letter-spacing: -.03em; }
+  .bal .s { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .bal.off .v { color: var(--off); }
+  .bal.al .v { color: var(--al); }
+  .bal.low .v { color: var(--np); }
+  .drop {
+    background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+    margin-bottom: 12px; overflow: hidden;
+  }
+  .drop-btn {
+    width: 100%; text-align: left; background: transparent; border: 0; color: var(--text);
+    padding: 12px 14px; font-weight: 700; display: flex; justify-content: space-between; align-items: center;
+  }
+  .drop-body { display: none; padding: 0 12px 10px; }
+  .drop.open .drop-body { display: block; }
+  .mini {
+    display: flex; justify-content: space-between; gap: 8px; align-items: center;
+    padding: 9px 2px; border-top: 1px solid var(--line); font-size: 14px;
+  }
+  .mini b { font-variant-numeric: tabular-nums; }
+  .banner {
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 10px 12px; margin-bottom: 12px; color: #d5e4ff; font-size: 13px;
+  }
+  .cal-head { display: flex; align-items: center; justify-content: space-between; margin: 6px 2px 10px; }
+  .cal-head h2 { margin: 0; font-size: 16px; }
+  .nav-btn {
+    border: 1px solid var(--line); background: var(--card); color: var(--text);
+    border-radius: 12px; height: 36px; padding: 0 12px; font-weight: 650;
+  }
+  .weekdays, .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+  .weekdays { margin-bottom: 6px; }
+  .weekdays span { text-align: center; font-size: 11px; color: var(--muted); font-weight: 700; }
+  .weekdays span.fri { color: var(--fri); }
+  .day {
+    aspect-ratio: 1; border-radius: 14px; border: 1px solid transparent;
+    background: rgba(255,255,255,.03); color: var(--text);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 1px; padding: 0; position: relative;
+  }
+  .day.empty { background: transparent; }
+  .day .n { font-size: 14px; font-weight: 750; }
+  .day .tag { font-size: 8px; letter-spacing: .03em; font-weight: 800; }
+  .day.today { outline: 2px solid #fff; outline-offset: -2px; }
+  .day.fri:not(.marked) { box-shadow: inset 0 -3px 0 var(--fri); }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .chip { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); background: rgba(255,255,255,.03); border-radius: 999px; padding: 6px 10px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: 0 0 auto; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; margin-bottom: 12px; box-shadow: var(--shadow); }
+  .card h3 { margin: 0 0 10px; font-size: 15px; }
+  .row { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; }
+  .row:first-of-type { border-top: 0; }
+  .row span { color: var(--muted); }
+  label { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 6px; }
+  input, select, textarea {
+    width: 100%; background: #0c1b30; border: 1px solid var(--line); border-radius: 12px;
+    padding: 12px; font-size: 15px; outline: none;
+  }
+  textarea { min-height: 72px; resize: vertical; }
+  .primary, .ghost, .danger {
+    width: 100%; border: 0; border-radius: 14px; padding: 13px 14px; font-weight: 750; font-size: 15px; margin-top: 10px;
+  }
+  .primary { background: linear-gradient(180deg, #3d8bfd, #1f6fe5); color: white; }
+  .ghost { background: rgba(255,255,255,.06); color: var(--text); border: 1px solid var(--line); }
+  .danger { background: rgba(239,68,68,.15); color: #ffb4b4; }
+  .menu-mask, .sheet-mask {
+    position: fixed; inset: 0; background: rgba(2,6,14,.55); opacity: 0; pointer-events: none; transition: .2s ease; z-index: 4;
+  }
+  .menu-mask.on, .sheet-mask.on { opacity: 1; pointer-events: auto; }
+  .menu {
+    position: fixed; top: 0; left: 0; bottom: 0; width: min(320px, 86vw);
+    background: #0d1b2e; transform: translateX(-105%); transition: .25s ease;
+    padding: calc(18px + var(--safe-t)) 16px 20px; z-index: 5; border-right: 1px solid var(--line);
+  }
+  .menu.on { transform: none; }
+  .menu h2 { margin: 6px 0 14px; font-size: 20px; }
+  .mitem {
+    width: 100%; text-align: left; background: transparent; border: 0; color: var(--text);
+    padding: 13px 10px; border-radius: 12px; font-size: 16px; font-weight: 650;
+  }
+  .mitem.on, .mitem:active { background: rgba(255,255,255,.06); }
+  .sheet {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 6;
+    background: #102038; border-radius: 22px 22px 0 0; padding: 12px 16px calc(16px + var(--safe-b));
+    transform: translateY(110%); transition: .25s ease; width: min(480px, 100%); margin: 0 auto;
+    border-top: 1px solid var(--line); max-height: 86vh; overflow: auto;
+  }
+  .sheet.on { transform: none; }
+  .grab { width: 42px; height: 4px; border-radius: 99px; background: rgba(255,255,255,.2); margin: 2px auto 12px; }
+  .sheet h3 { margin: 0 0 4px; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .type-btn {
+    width: 100%; text-align: left; border: 1px solid var(--line); background: rgba(255,255,255,.03);
+    color: var(--text); border-radius: 14px; padding: 11px 12px; margin-top: 8px;
+    display: flex; align-items: center; gap: 10px; font-weight: 700;
+  }
+  .half { margin-left: auto; font-size: 12px; color: var(--muted); font-weight: 650; }
+  .hist-item { display: flex; justify-content: space-between; gap: 8px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line); }
+  .pill { font-size: 11px; font-weight: 800; border-radius: 999px; padding: 4px 8px; }
+  .toast {
+    position: fixed; left: 50%; bottom: calc(18px + var(--safe-b)); transform: translateX(-50%) translateY(20px);
+    background: #eef4ff; color: #0b1220; padding: 10px 14px; border-radius: 999px; font-weight: 700;
+    opacity: 0; pointer-events: none; transition: .2s ease; z-index: 9; font-size: 13px;
+  }
+  .toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .empty-note { color: var(--muted); text-align: center; padding: 24px 8px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <button class="menu-btn" id="openMenu" aria-label="Open menu">☰</button>
+    <div class="brand">
+      <h1 id="title">Off Days</h1>
+      <p id="subtitle">Calendar</p>
+    </div>
+    <button class="icon-btn" id="todayBtn" title="Today">•</button>
+  </div>
+
+  <section class="screen on" id="screen-home">
+    <div class="balances">
+      <div class="bal off" id="offCard">
+        <div class="k">Pending / roster off</div>
+        <div class="v" id="offBal">0</div>
+        <div class="s" id="offSub">Fridays earned − taken</div>
+      </div>
+      <div class="bal al" id="alCard">
+        <div class="k">Annual leave</div>
+        <div class="v" id="alBal">0</div>
+        <div class="s" id="alSub">2.5 each month</div>
+      </div>
+    </div>
+    <div class="drop" id="otherDrop">
+      <button class="drop-btn" id="dropToggle">Other leave <span id="dropMark">▾</span></button>
+      <div class="drop-body" id="otherList"></div>
+    </div>
+    <div class="banner" id="homeBanner" hidden></div>
+    <div class="cal-head">
+      <button class="nav-btn" id="prevMonth">‹</button>
+      <h2 id="monthLabel">October 2026</h2>
+      <button class="nav-btn" id="nextMonth">›</button>
+    </div>
+    <div class="weekdays" id="weekdays"></div>
+    <div class="grid" id="grid"></div>
+    <div class="legend" id="legend"></div>
+  </section>
+
+  <section class="screen" id="screen-balances">
+    <div class="card" id="balanceDetail"></div>
+  </section>
+
+  <section class="screen" id="screen-history">
+    <div class="card" id="historyList"></div>
+  </section>
+
+  <section class="screen" id="screen-settings">
+    <div class="card">
+      <h3>Settings</h3>
+      <label>Week starts on</label>
+      <select id="weekStart">
+        <option value="1">Monday</option>
+        <option value="0">Sunday</option>
+        <option value="6">Saturday</option>
+      </select>
+      <label>Ask before saving a mark</label>
+      <select id="confirmMark">
+        <option value="yes">Yes</option>
+        <option value="no">No</option>
+      </select>
+      <button class="primary" id="saveSettings">Save settings</button>
+    </div>
+  </section>
+
+  <section class="screen" id="screen-admin">
+    <div class="card">
+      <h3>Admin panel</h3>
+      <p class="muted">Pending off and roster day off are the same yellow balance. Friday adds to it. Marking that day reduces it.</p>
+      <label>Your name</label>
+      <input id="admName" placeholder="Name on home screen">
+      <label>Accrual start date</label>
+      <input id="admStart" type="date">
+      <label>Opening pending / roster off</label>
+      <input id="admOffOpen" type="number" step="0.5">
+      <label>Opening annual leave</label>
+      <input id="admAlOpen" type="number" step="0.5">
+      <label>Off days added each Friday</label>
+      <input id="admOffRate" type="number" step="0.5" min="0">
+      <label>AL added each completed month</label>
+      <input id="admAlRate" type="number" step="0.5" min="0">
+      <label>Medical allowance per year</label>
+      <input id="admMlYear" type="number" step="0.5" min="0">
+      <label>Emergency allowance per year</label>
+      <input id="admEmYear" type="number" step="0.5" min="0">
+      <label>Paternity allowance per year</label>
+      <input id="admPtYear" type="number" step="0.5" min="0">
+      <label>Circum allowance per year</label>
+      <input id="admCcYear" type="number" step="0.5" min="0">
+      <label>Home screen note</label>
+      <textarea id="admBanner" placeholder="Optional note shown above the calendar"></textarea>
+      <button class="primary" id="saveAdmin">Update home & balances</button>
+      <button class="ghost" id="hideAdmin">Hide admin again</button>
+      <button class="danger" id="resetBtn">Reset all marks and settings</button>
+    </div>
+    <div class="card">
+      <h3>Export / import all data</h3>
+      <p class="muted">Includes marks, balances, settings, and admin values. Data also stays saved on this phone.</p>
+      <button class="primary" id="exportBtn">Export all data</button>
+      <label>Import all data</label>
+      <input id="importFile" type="file" accept="application/json,.json">
+      <textarea id="importBox" placeholder="Or paste backup JSON here"></textarea>
+      <button class="ghost" id="importBtn">Import pasted data</button>
+    </div>
+  </section>
+</div>
+
+<div class="menu-mask" id="menuMask"></div>
+<nav class="menu" id="menu">
+  <h2>Menu</h2>
+  <button class="mitem on" data-screen="home">Calendar</button>
+  <button class="mitem" data-screen="balances">Balances</button>
+  <button class="mitem" data-screen="history">History</button>
+  <button class="mitem" data-screen="settings">Settings</button>
+  <button class="mitem" data-screen="admin" id="adminItem" hidden>Admin panel</button>
+</nav>
+
+<div class="sheet-mask" id="sheetMask"></div>
+<div class="sheet" id="sheet">
+  <div class="grab"></div>
+  <h3 id="sheetTitle">Day</h3>
+  <p class="muted" id="sheetHint">Choose a leave type. Half day is available on each type.</p>
+  <label>Note</label>
+  <input id="sheetNote" placeholder="Optional note">
+  <div id="typeList"></div>
+  <button class="danger" id="clearMark">Clear this day</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const KEY = "offday-tracker-v2";
+const TYPES = [
+  { id: "off", label: "Roster / pending off", short: "OFF", color: "#f5d547", balance: "off" },
+  { id: "al", label: "Annual", short: "AL", color: "#c9b6ff", balance: "al" },
+  { id: "ml", label: "Medical", short: "ML", color: "#f97316", balance: "ml" },
+  { id: "np", label: "No pay", short: "NP", color: "#ef4444", balance: null },
+  { id: "em", label: "Emergency", short: "EM", color: "#fb7185", balance: "em" },
+  { id: "pt", label: "Paternity", short: "PT", color: "#38bdf8", balance: "pt" },
+  { id: "cc", label: "Circum", short: "CC", color: "#4ade80", balance: "cc" }
+];
+const screens = { home: "Calendar", balances: "Balances", history: "History", settings: "Settings", admin: "Admin panel" };
+const $ = (id) => document.getElementById(id);
+const typeById = Object.fromEntries(TYPES.map((t) => [t.id, t]));
+
+function defaultState() {
+  const t = new Date();
+  return {
+    profile: {
+      name: "",
+      startDate: ymd(new Date(t.getFullYear(), t.getMonth(), 1)),
+      openingOff: 0,
+      openingAl: 0,
+      offPerFriday: 1,
+      alPerMonth: 2.5,
+      mlYear: 30,
+      emYear: 0,
+      ptYear: 0,
+      ccYear: 0,
+      banner: "",
+      weekStart: 1,
+      confirmMark: "yes",
+      adminOpen: false
+    },
+    marks: {}
+  };
+}
+let state = load();
+let cursor = new Date();
+let selected = null;
+
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY) || localStorage.getItem("offday-tracker-v1");
+    if (!raw) return defaultState();
+    const parsed = JSON.parse(raw);
+    return { ...defaultState(), ...parsed, profile: { ...defaultState().profile, ...(parsed.profile || {}) }, marks: parsed.marks || {} };
+  } catch (e) { return defaultState(); }
+}
+function save() { localStorage.setItem(KEY, JSON.stringify(state)); }
+function applyAdminVisibility() {
+  $("adminItem").hidden = !state.profile.adminOpen;
+}
+function exportAll() {
+  const payload = { app: "off-days", exportedAt: new Date().toISOString(), profile: state.profile, marks: state.marks };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "off-days-all-data.json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast("All data exported");
+}
+function importAll(parsed) {
+  const profile = parsed.profile || parsed;
+  const marks = parsed.marks;
+  if (!profile || !marks || typeof marks !== "object") throw new Error("bad");
+  state = { ...defaultState(), profile: { ...defaultState().profile, ...profile }, marks };
+  save();
+  applyAdminVisibility();
+  toast("All data imported");
+  show("home");
+}
+function ymd(d) {
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+function parse(s) {
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+function fmt(n) { return (Math.round(Number(n) * 10) / 10).toString().replace(/\.0$/, ""); }
+function pretty(s) {
+  return parse(s).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+}
+function toast(msg) {
+  const el = $("toast");
+  el.textContent = msg;
+  el.classList.add("on");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => el.classList.remove("on"), 1800);
+}
+function hexDim(hex) {
+  const n = hex.replace("#", "");
+  const r = parseInt(n.slice(0, 2), 16), g = parseInt(n.slice(2, 4), 16), b = parseInt(n.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},.28)`;
+}
+function countFridays(startStr, endStr) {
+  let d = parse(startStr), end = parse(endStr), n = 0;
+  if (d > end) return 0;
+  while (d <= end) {
+    if (d.getDay() === 5) n++;
+    d.setDate(d.getDate() + 1);
+  }
+  return n;
+}
+function accruedMonths(startStr, endStr) {
+  const s = parse(startStr), e = parse(endStr);
+  let months = (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth());
+  if (e.getDate() < s.getDate()) months--;
+  return Math.max(0, months);
+}
+function usedOf(id, year) {
+  return Object.entries(state.marks).reduce((sum, [date, m]) => {
+    if (m.type !== id) return sum;
+    if (year && date.slice(0, 4) !== String(year)) return sum;
+    return sum + Number(m.amount || 1);
+  }, 0);
+}
+function totals() {
+  const today = ymd(new Date());
+  const year = new Date().getFullYear();
+  const p = state.profile;
+  const fridays = countFridays(p.startDate, today);
+  const months = accruedMonths(p.startDate, today);
+  const offUsed = usedOf("off");
+  const alUsed = usedOf("al");
+  const offEarned = Number(p.openingOff) + fridays * Number(p.offPerFriday);
+  const alEarned = Number(p.openingAl) + months * Number(p.alPerMonth);
+  const yearly = {
+    ml: { cap: Number(p.mlYear || 0), used: usedOf("ml", year) },
+    em: { cap: Number(p.emYear || 0), used: usedOf("em", year) },
+    pt: { cap: Number(p.ptYear || 0), used: usedOf("pt", year) },
+    cc: { cap: Number(p.ccYear || 0), used: usedOf("cc", year) },
+    np: { cap: 0, used: usedOf("np", year) }
+  };
+  return {
+    fridays, months, offUsed, alUsed, offEarned, alEarned,
+    offBal: offEarned - offUsed, alBal: alEarned - alUsed, yearly
+  };
+}
+function otherLine(id) {
+  const t = typeById[id];
+  const info = totals().yearly[id];
+  const left = info.cap ? fmt(info.cap - info.used) + " left" : fmt(info.used) + " taken";
+  return `<div class="mini"><span><i class="dot" style="background:${t.color}"></i> ${t.label}</span><b style="color:${t.color}">${left}</b></div>`;
+}
+function renderHome() {
+  const t = totals();
+  $("offBal").textContent = fmt(t.offBal);
+  $("alBal").textContent = fmt(t.alBal);
+  $("offCard").classList.toggle("low", t.offBal < 0);
+  $("alCard").classList.toggle("low", t.alBal < 0);
+  $("offSub").textContent = fmt(t.offEarned) + " earned · " + fmt(t.offUsed) + " taken";
+  $("alSub").textContent = fmt(state.profile.alPerMonth) + " / month · " + fmt(t.alUsed) + " taken";
+  $("title").textContent = state.profile.name || "Off Days";
+  $("otherList").innerHTML = ["ml", "em", "pt", "cc", "np"].map(otherLine).join("");
+  const banner = $("homeBanner");
+  banner.hidden = !state.profile.banner;
+  banner.textContent = state.profile.banner || "";
+  const names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const start = Number(state.profile.weekStart);
+  $("weekdays").innerHTML = Array.from({ length: 7 }, (_, i) => {
+    const d = (start + i) % 7;
+    return `<span class="${d === 5 ? "fri" : ""}">${names[d]}</span>`;
+  }).join("");
+  $("monthLabel").textContent = cursor.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  const first = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+  const last = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0);
+  const lead = (first.getDay() - start + 7) % 7;
+  const today = ymd(new Date());
+  let html = "";
+  for (let i = 0; i < lead; i++) html += `<button class="day empty" disabled></button>`;
+  for (let day = 1; day <= last.getDate(); day++) {
+    const date = new Date(cursor.getFullYear(), cursor.getMonth(), day);
+    const key = ymd(date);
+    const mark = state.marks[key];
+    const meta = mark ? typeById[mark.type] : null;
+    const cls = ["day"];
+    if (date.getDay() === 5) cls.push("fri");
+    if (meta) cls.push("marked");
+    if (key === today) cls.push("today");
+    const style = meta ? `style="background:${hexDim(meta.color)};border-color:${meta.color}"` : "";
+    const tag = meta ? (Number(mark.amount) === 0.5 ? "½ " + meta.short : meta.short) : (date.getDay() === 5 ? "FRI" : "");
+    const tagColor = meta ? meta.color : "var(--fri)";
+    html += `<button class="${cls.join(" ")}" data-date="${key}" ${style}><span class="n">${day}</span><span class="tag" style="color:${tagColor}">${tag}</span></button>`;
+  }
+  $("grid").innerHTML = html;
+  $("legend").innerHTML = TYPES.map((tp) => `<div class="chip"><i class="dot" style="background:${tp.color}"></i>${tp.short} ${tp.label}</div>`).join("") + `<div class="chip"><i class="dot" style="background:var(--fri)"></i>Friday earned</div>`;
+}
+function renderBalances() {
+  const t = totals();
+  const rows = [
+    ["Opening pending / roster off", fmt(state.profile.openingOff)],
+    ["Fridays earned", fmt(t.fridays * state.profile.offPerFriday) + " (" + t.fridays + " Fridays)"],
+    ["Roster / pending taken", fmt(t.offUsed)],
+    ["Pending off balance", fmt(t.offBal)],
+    ["Opening annual leave", fmt(state.profile.openingAl)],
+    ["Months accrued", t.months],
+    ["AL earned", fmt(t.months * state.profile.alPerMonth)],
+    ["AL taken", fmt(t.alUsed)],
+    ["AL balance", fmt(t.alBal)]
+  ];
+  ["ml", "em", "pt", "cc", "np"].forEach((id) => {
+    const info = t.yearly[id];
+    const label = typeById[id].label + " this year";
+    rows.push([label, info.cap ? fmt(info.used) + " / " + fmt(info.cap) : fmt(info.used) + " taken"]);
+  });
+  $("balanceDetail").innerHTML = `<h3>How the balances work</h3>` + rows.map(([k, v]) => `<div class="row"><span>${k}</span><b>${v}</b></div>`).join("") + `<p class="muted">No pay is counted only. It does not reduce off or AL.</p>`;
+}
+function renderHistory() {
+  const items = Object.entries(state.marks).sort((a, b) => b[0].localeCompare(a[0]));
+  const box = $("historyList");
+  if (!items.length) { box.innerHTML = `<div class="empty-note">No leave marked yet.</div>`; return; }
+  box.innerHTML = `<h3>Taken days</h3>` + items.map(([date, m]) => {
+    const meta = typeById[m.type] || TYPES[0];
+    const label = (Number(m.amount) === 0.5 ? "0.5 " : "") + meta.short;
+    return `<div class="hist-item"><div><b>${pretty(date)}</b><div class="muted">${m.note || meta.label}</div></div><span class="pill" style="background:${hexDim(meta.color)};color:${meta.color}">${label}</span></div>`;
+  }).join("");
+}
+function fillAdmin() {
+  const p = state.profile;
+  $("admName").value = p.name || "";
+  $("admStart").value = p.startDate;
+  $("admOffOpen").value = p.openingOff;
+  $("admAlOpen").value = p.openingAl;
+  $("admOffRate").value = p.offPerFriday;
+  $("admAlRate").value = p.alPerMonth;
+  $("admMlYear").value = p.mlYear;
+  $("admEmYear").value = p.emYear;
+  $("admPtYear").value = p.ptYear;
+  $("admCcYear").value = p.ccYear;
+  $("admBanner").value = p.banner || "";
+  $("weekStart").value = String(p.weekStart);
+  $("confirmMark").value = p.confirmMark;
+}
+function show(screen) {
+  document.querySelectorAll(".screen").forEach((el) => el.classList.remove("on"));
+  $("screen-" + screen).classList.add("on");
+  document.querySelectorAll(".mitem").forEach((el) => el.classList.toggle("on", el.dataset.screen === screen));
+  $("subtitle").textContent = screens[screen];
+  $("todayBtn").style.visibility = screen === "home" ? "visible" : "hidden";
+  if (screen === "home") renderHome();
+  if (screen === "balances") renderBalances();
+  if (screen === "history") renderHistory();
+  if (screen === "admin" || screen === "settings") fillAdmin();
+  closeMenu();
+}
+function openMenu() { $("menu").classList.add("on"); $("menuMask").classList.add("on"); }
+function closeMenu() { $("menu").classList.remove("on"); $("menuMask").classList.remove("on"); }
+function openSheet(date) {
+  selected = date;
+  const mark = state.marks[date];
+  $("sheetTitle").textContent = pretty(date);
+  $("sheetNote").value = mark?.note || "";
+  $("sheetHint").textContent = "Roster day off and pending off are the same yellow balance.";
+  $("typeList").innerHTML = TYPES.map((tp) => `<button class="type-btn" data-type="${tp.id}" data-amount="1"><i class="dot" style="background:${tp.color}"></i>${tp.label}<span class="half" data-half="${tp.id}">0.5</span></button>`).join("");
+  $("sheet").classList.add("on");
+  $("sheetMask").classList.add("on");
+}
+function closeSheet() { $("sheet").classList.remove("on"); $("sheetMask").classList.remove("on"); selected = null; }
+function setMark(type, amount) {
+  if (!selected) return;
+  const meta = typeById[type];
+  if (state.profile.confirmMark === "yes") {
+    const name = (amount === 0.5 ? "0.5 " : "") + meta.label;
+    if (!confirm("Mark " + pretty(selected) + " as " + name + "?")) return;
+  }
+  state.marks[selected] = { type, amount, note: $("sheetNote").value.trim() };
+  save();
+  closeSheet();
+  renderHome();
+  toast(meta.short + " saved");
+}
+$("openMenu").onclick = openMenu;
+$("menuMask").onclick = closeMenu;
+$("sheetMask").onclick = closeSheet;
+document.querySelectorAll(".mitem").forEach((btn) => btn.onclick = () => show(btn.dataset.screen));
+$("prevMonth").onclick = () => { cursor = new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1); renderHome(); };
+$("nextMonth").onclick = () => { cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1); renderHome(); };
+$("todayBtn").onclick = () => { cursor = new Date(); renderHome(); };
+$("dropToggle").onclick = () => $("otherDrop").classList.toggle("open");
+$("grid").onclick = (e) => {
+  const btn = e.target.closest("[data-date]");
+  if (btn) openSheet(btn.dataset.date);
+};
+$("typeList").onclick = (e) => {
+  const half = e.target.closest("[data-half]");
+  const btn = e.target.closest("[data-type]");
+  if (!btn) return;
+  setMark(btn.dataset.type, half ? 0.5 : 1);
+};
+$("clearMark").onclick = () => {
+  if (!selected || !state.marks[selected]) { closeSheet(); return; }
+  delete state.marks[selected];
+  save(); closeSheet(); renderHome(); toast("Day cleared");
+};
+$("saveSettings").onclick = () => {
+  state.profile.weekStart = Number($("weekStart").value);
+  state.profile.confirmMark = $("confirmMark").value;
+  save(); toast("Settings saved");
+};
+$("saveAdmin").onclick = () => {
+  const p = state.profile;
+  p.name = $("admName").value.trim();
+  p.startDate = $("admStart").value || p.startDate;
+  p.openingOff = Number($("admOffOpen").value || 0);
+  p.openingAl = Number($("admAlOpen").value || 0);
+  p.offPerFriday = Number($("admOffRate").value || 0);
+  p.alPerMonth = Number($("admAlRate").value || 0);
+  p.mlYear = Number($("admMlYear").value || 0);
+  p.emYear = Number($("admEmYear").value || 0);
+  p.ptYear = Number($("admPtYear").value || 0);
+  p.ccYear = Number($("admCcYear").value || 0);
+  p.banner = $("admBanner").value.trim();
+  save(); toast("Home updated"); show("home");
+};
+$("resetBtn").onclick = () => {
+  if (!confirm("Reset everything on this phone?")) return;
+  state = defaultState(); save(); fillAdmin(); applyAdminVisibility(); toast("Reset"); show("home");
+};
+$("hideAdmin").onclick = () => {
+  state.profile.adminOpen = false;
+  save();
+  applyAdminVisibility();
+  toast("Admin hidden");
+  show("home");
+};
+$("exportBtn").onclick = exportAll;
+$("importFile").onchange = () => {
+  const file = $("importFile").files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try { importAll(JSON.parse(reader.result)); }
+    catch (e) { toast("Could not read that file"); }
+    $("importFile").value = "";
+  };
+  reader.readAsText(file);
+};
+$("importBtn").onclick = () => {
+  try { importAll(JSON.parse($("importBox").value)); }
+  catch (e) { toast("Could not read that backup"); }
+};
+let secretTaps = [];
+document.addEventListener("click", (e) => {
+  if (e.target.closest("input, textarea, select, a")) return;
+  const now = Date.now();
+  secretTaps = secretTaps.filter((t) => now - t < 3000);
+  secretTaps.push(now);
+  if (secretTaps.length >= 5 && !state.profile.adminOpen) {
+    secretTaps = [];
+    state.profile.adminOpen = true;
+    save();
+    applyAdminVisibility();
+    toast("Admin unlocked");
+  }
+});
+applyAdminVisibility();
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("./sw.js").catch(() => {});
+}
+show("home");
+</script>
+</body>
+</html>
