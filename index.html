@@ -248,10 +248,14 @@
       <input id="admName" placeholder="Name on home screen">
       <label>Accrual start date</label>
       <input id="admStart" type="date">
-      <label>Opening pending / roster off</label>
-      <input id="admOffOpen" type="number" step="0.5">
-      <label>Opening annual leave</label>
-      <input id="admAlOpen" type="number" step="0.5">
+      <p class="muted" id="admOffAuto">Fridays added automatically: 0</p>
+      <label>All off balance</label>
+      <input id="admOffBal" type="number" step="0.5">
+      <p class="muted">This is the full pending / roster balance, including Fridays already added. Change it to add or reduce days.</p>
+      <p class="muted" id="admAlAuto">Annual leave added automatically: 0</p>
+      <label>All AL balance</label>
+      <input id="admAlBal" type="number" step="0.5">
+      <p class="muted">This is the full annual-leave balance, including the 2.5 days added each month. Change it to add or reduce days.</p>
       <label>Off days added each Friday</label>
       <input id="admOffRate" type="number" step="0.5" min="0">
       <label>AL added each completed month</label>
@@ -496,11 +500,11 @@ function renderHome() {
 function renderBalances() {
   const t = totals();
   const rows = [
-    ["Opening pending / roster off", fmt(state.profile.openingOff)],
+    ["Manual off adjustment", fmt(state.profile.openingOff)],
     ["Fridays earned", fmt(t.fridays * state.profile.offPerFriday) + " (" + t.fridays + " Fridays, added at the start of each Friday)"],
     ["Roster / pending taken", fmt(t.offUsed)],
     ["Pending off balance", fmt(t.offBal)],
-    ["Opening annual leave", fmt(state.profile.openingAl)],
+    ["Manual AL adjustment", fmt(state.profile.openingAl)],
     ["Months accrued", t.months],
     ["AL earned", fmt(t.months * state.profile.alPerMonth)],
     ["AL taken", fmt(t.alUsed)],
@@ -525,10 +529,13 @@ function renderHistory() {
 }
 function fillAdmin() {
   const p = state.profile;
+  const t = totals();
   $("admName").value = p.name || "";
   $("admStart").value = p.startDate;
-  $("admOffOpen").value = p.openingOff;
-  $("admAlOpen").value = p.openingAl;
+  $("admOffBal").value = fmt(t.offBal);
+  $("admAlBal").value = fmt(t.alBal);
+  $("admOffAuto").textContent = "Fridays added automatically: " + fmt(t.fridays * p.offPerFriday) + " (" + t.fridays + " Fridays) · taken " + fmt(t.offUsed);
+  $("admAlAuto").textContent = "Annual leave added automatically: " + fmt(t.months * p.alPerMonth) + " (" + t.months + " months) · taken " + fmt(t.alUsed);
   $("admOffRate").value = p.offPerFriday;
   $("admAlRate").value = p.alPerMonth;
   $("admMlYear").value = p.mlYear;
@@ -609,8 +616,6 @@ $("saveAdmin").onclick = () => {
   const p = state.profile;
   p.name = $("admName").value.trim();
   p.startDate = $("admStart").value || p.startDate;
-  p.openingOff = Number($("admOffOpen").value || 0);
-  p.openingAl = Number($("admAlOpen").value || 0);
   p.offPerFriday = Number($("admOffRate").value || 0);
   p.alPerMonth = Number($("admAlRate").value || 0);
   p.mlYear = Number($("admMlYear").value || 0);
@@ -618,7 +623,14 @@ $("saveAdmin").onclick = () => {
   p.ptYear = Number($("admPtYear").value || 0);
   p.ccYear = Number($("admCcYear").value || 0);
   p.banner = $("admBanner").value.trim();
-  save(); toast("Home updated"); show("home");
+  const today = ymd(new Date());
+  const fridayEarned = countFridays(p.startDate, today) * p.offPerFriday;
+  const alEarned = accruedMonths(p.startDate, today) * p.alPerMonth;
+  const wantedOff = Number($("admOffBal").value || 0);
+  const wantedAl = Number($("admAlBal").value || 0);
+  p.openingOff = wantedOff - fridayEarned + usedOf("off");
+  p.openingAl = wantedAl - alEarned + usedOf("al");
+  save(); toast("Balances updated"); show("home");
 };
 $("resetBtn").onclick = () => {
   if (!confirm("Reset everything on this phone?")) return;
