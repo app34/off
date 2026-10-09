@@ -191,7 +191,7 @@
       <div class="bal off" id="offCard">
         <div class="k">Pending / roster off</div>
         <div class="v" id="offBal">0</div>
-        <div class="s" id="offSub">Fridays earned − taken</div>
+        <div class="s" id="offSub">Added when Friday starts</div>
       </div>
       <div class="bal al" id="alCard">
         <div class="k">Annual leave</div>
@@ -456,7 +456,7 @@ function renderHome() {
   $("alBal").textContent = fmt(t.alBal);
   $("offCard").classList.toggle("low", t.offBal < 0);
   $("alCard").classList.toggle("low", t.alBal < 0);
-  $("offSub").textContent = fmt(t.offEarned) + " earned · " + fmt(t.offUsed) + " taken";
+  $("offSub").textContent = fmt(t.offEarned) + " earned from Friday start · " + fmt(t.offUsed) + " taken";
   $("alSub").textContent = fmt(state.profile.alPerMonth) + " / month · " + fmt(t.alUsed) + " taken";
   $("title").textContent = state.profile.name || "Off Days";
   $("otherList").innerHTML = ["ml", "em", "pt", "cc", "np"].map(otherLine).join("");
@@ -497,7 +497,7 @@ function renderBalances() {
   const t = totals();
   const rows = [
     ["Opening pending / roster off", fmt(state.profile.openingOff)],
-    ["Fridays earned", fmt(t.fridays * state.profile.offPerFriday) + " (" + t.fridays + " Fridays)"],
+    ["Fridays earned", fmt(t.fridays * state.profile.offPerFriday) + " (" + t.fridays + " Fridays, added at the start of each Friday)"],
     ["Roster / pending taken", fmt(t.offUsed)],
     ["Pending off balance", fmt(t.offBal)],
     ["Opening annual leave", fmt(state.profile.openingAl)],
@@ -665,6 +665,15 @@ applyAdminVisibility();
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("./sw.js").catch(() => {});
 }
+function refreshOnDayStart() {
+  const next = new Date();
+  next.setHours(24, 0, 0, 0);
+  setTimeout(() => {
+    renderHome();
+    refreshOnDayStart();
+  }, next.getTime() - Date.now() + 500);
+}
+refreshOnDayStart();
 show("home");
 </script>
 </body>
